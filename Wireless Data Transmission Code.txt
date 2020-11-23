@@ -1,0 +1,228 @@
+#include<reg51.h>
+#include<intrins.h> // header file used for generating code for routine programs //
+#define lcd P0		// defining the LCD DATA pins to port'0' // 
+sbitrs=P1^5;		// DATA/COMMAND control pin of LCD assigning to Port'1.5'// 
+sbitrw=P1^6;		// READ/WRITE control pin of LCD assigning to port'1.6'//
+sbiten=P1^7;		// ENABLE control pin of LCD assigning to port'1.7'//
+sbitlcd_bsy=P0^7;	// assigning the Port'0.7' for checking the busy of LCD//
+sbit R0 = P2^7;		// KEYPAD ROW1 //
+sbit R1 = P2^6;		// KEYPAD ROW2 //
+sbit R2 = P2^5;		// KEYPAD ROW3 //
+sbit R3 = P2^4;		// KEYPAD ROW4 //
+sbit C3 = P2^3;
+sbit C2 = P2^2;		
+sbit C1 = P2^1;		
+sbit C0 = P2^0;	
+void init_lcd(void);
+void cmd_lcd(unsigned char);		// LCD COMMAND write function(global declaration) //
+void lcd_data(unsigned char);		// LCD DATA write function(global declaration) //
+void display_lcd(unsigned char *);	// LCD DISPLAY function(global declaration) //
+void LCD_Busy_Chk(void);		
+void DELAYMS(unsigned int);		// DELAY function(global declaration) //
+void KEYPAD(void);		// KEYPAD WRITTING function(global declaration) //
+void LCD_STORE(void);		// KEYPAD DATA storing function(global declaration) //
+int keypress();				// KEYPAD KEY PRESS checking function(global declaration) //
+int i,j,k,row,col;
+unsigned char key_cnt=0;
+char a[4]={'0','0','0','0'};
+unsigned char fkey,byte,key_store;
+
+unsigned char KEY_PAD[4][4]={'*','0','#','D',
+							 '7','8','9','C',
+						     '4','5','6','B',
+							 '1','2','3','A'};
+/****************************/
+/***************************/
+void main(void)
+	{
+	P3=0x00;
+	init_lcd();		// GIVING INITIAL COMMANDS TO LCD//
+	cmd_lcd(0x80);
+	display_lcd(" RF TRANSMITTER ");
+	DELAYMS(1000);
+Start:
+	cmd_lcd(0x01);
+	cmd_lcd(0x80);
+	display_lcd("ENTER ANY KEY...");
+	cmd_lcd(0xC0);
+	key_cnt=0;
+	while(key_cnt!=1)	
+		{
+		KEYPAD();
+		if(fkey==1)
+		 {
+		fkey=0;
+		 a[j] = key_store;
+		 byte=a[j];
+		lcd_data(byte);
+		key_cnt++;
+		 }
+		}
+		DELAYMS(300);
+	cmd_lcd(0x01);
+	cmd_lcd(0x80);
+	display_lcd(" TX IN PROGRESS ");
+	DELAYMS(200);
+if(byte=='1')
+{
+P3=0x10;
+}
+else if(byte=='2')
+{
+P3=0x20;
+}
+else if(byte=='3')
+{
+P3=0x30;
+}
+else if(byte=='4')
+{
+P3=0x40;
+}
+else if(byte=='5')
+{
+P3=0x50;
+}
+else if(byte=='6')
+{
+P3=0x60;
+}
+else if(byte=='7')
+{
+P3=0x70;
+}
+else if(byte=='8')
+{
+P3=0x80;
+}
+else if(byte=='9')
+{
+P3=0x90;
+}
+else if(byte=='A')
+{
+P3=0xA0;
+}
+else if(byte=='B')
+{
+P3=0xB0;
+}
+else if(byte=='C')
+{
+P3=0xC0;
+}
+else if(byte=='D')
+{
+P3=0xD0;
+}
+else if(byte=='*')
+{
+P3=0xE0;
+}
+else if(byte=='#')
+{
+P3=0xF0;
+}
+	cmd_lcd(0x01);
+	cmd_lcd(0x80);
+	display_lcd("DATA TRANSMITTED");
+	DELAYMS(300);
+	cmd_lcd(0x01);
+	cmd_lcd(0x80);
+	display_lcd("   THANK YOU    ");
+	DELAYMS(200);
+	goto Start;
+	}
+/*........lcd string display................*/
+void init_lcd(void)
+{
+	cmd_lcd(0x30);
+	cmd_lcd(0x30);
+	cmd_lcd(0x38);
+	cmd_lcd(0x0c);
+	cmd_lcd(0x06);
+	cmd_lcd(0x01);
+	DELAYMS(10);
+}
+void cmd_lcd(unsigned char c)
+{
+	LCD_Busy_Chk();
+	lcd=c;
+	rs=0;
+	rw=0;
+	en=1;
+	_nop_();
+	en=0;
+}
+void lcd_data(unsigned char c)
+{
+	LCD_Busy_Chk();
+	lcd=c;
+	rs=1;
+	rw=0;
+	en=1;
+	_nop_();
+	en=0;	
+}
+void LCD_Busy_Chk(void)
+{
+	lcd_bsy=1;
+	rs=0;
+	rw=1;
+	while(lcd_bsy==1)
+	{
+		en=0;
+		_nop_();
+	    _nop_();
+		_nop_();
+	    _nop_();
+		en=1;
+		}
+}
+void display_lcd(unsigned char *s)
+{
+	while(*s)
+	lcd_data(*s++);
+}
+/*...........delay routine program...........*/
+void DELAYMS(unsigned int itime)
+{
+		unsigned int x,y;
+		for(x=0;x<itime;x++)
+		for(y=0;y<1275;y++);
+	}
+/*..........keypad display routine...........*/
+void KEYPAD(void)
+	{ 
+	  P2 = 0x0F;
+		if(keypress())
+		{
+	switch(P2)
+		{
+		 case 0x07:col=0;break;
+		 case 0x0B:col=1;break;
+		 case 0x0D:col=2;break;
+		 case 0x0E:col=3;break;
+}
+		P2 = 0xF0;	
+	switch(P2)
+		{
+		 case 0x70:row=3;break;
+		 case 0xB0:row=2;break;
+		 case 0xD0:row=1;break;
+		 case 0xE0:row=0;break;
+}
+		key_store=(KEY_PAD[col][row]); 
+		fkey=1;
+		P2 = 0x0F;
+	  }
+		DELAYMS(50);
+}
+	int keypress()
+		{
+			R0=R1=R2=R3=0;
+		  if(C0&C1&C2&C3)
+			return 0;
+		  else
+			return 1;
+		}
